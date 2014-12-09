@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ForgeGradleManager:jar">
+    <output-path>$PROJECT_DIR$/../Compiled/artifacts/ForgeGradleManager_jar</output-path>
+    <root id="archive" name="ForgeGradleManager.jar">
+      <element id="module-output" name="ForgeGradleManager" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Libs/gson-2.2.4.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../Libs/guava-18.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
