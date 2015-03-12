@@ -15,32 +15,51 @@ buildscript {
     }
 }
 
+// Statement
 apply plugin: 'forge'
 
-version = "0.00.005"
-group = "net.jezza.es2"
-archivesBaseName = "ES2"
+// Fields
+sourceCompatibility = '1.7'
+targetCompatibility = '1.7'
+
+version = "1.2.1a"
+group = "me.jezza.thaumicpipes"
+archivesBaseName = "ThaumicPipes"
 
 sourceSets {
     main {
         java {
-            srcDir "G:/Minecraft/source/Elemental-Sciences-2/es_common"
+            srcDir "G:/Minecraft/source/Thaumic-Pipes/tp_common"
         }
         resources {
-            srcDir "G:/Minecraft/source/Elemental-Sciences-2/resources"
+            srcDir "G:/Minecraft/source/Thaumic-Pipes/resources"
         }
     }
 }
-
+ 
 minecraft {
-    version = "1.7.2-10.12.2.1121"
-    assetDir = "eclipse/assets"
+    version = "1.7.10-10.13.2.1286"
+    runDir = "eclipse"
 }
 
 dependencies {
+    compile fileTree('eclipse/mods')
+	// compile files('path/to/file.jar')
+}
+// |method call| method call | method call| FUNCTION_NAME | FUNCTION_START | file -> 
+configurations.compile.copy().each { file ->
+    logger.lifecycle "Processing ${file.path}..."
+    copy {
+        from(zipTree(file.path)) {
+            includeEmptyDirs = false
+            include '**/*_at.cfg'
+        }
+        into('src/api/resources/at')
+    }
 }
 
-processResources {
+processResources
+{
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
     inputs.property "mcversion", project.minecraft.version
@@ -58,3 +77,28 @@ processResources {
         exclude 'mcmod.info'
     }
 }
+
+jar {
+	version = minecraft.version + " - " + project.version
+	classifier = "universal"
+}
+
+task srcJar(type: Jar, dependsOn: 'sourceMainJava') {
+	// from sourceSets.main.allSource
+	from "build/sources/java"
+	version = minecraft.version + " - " + project.version
+	classifier = "src"
+}
+
+task devJar(type: Jar, dependsOn: 'classes') {
+    from sourceSets.main.output
+	version = minecraft.version + " - " + project.version
+    classifier = "dev"
+}
+
+artifacts {
+    archives devJar
+    archives srcJar
+}
+
+project.tasks.build.dependsOn devJar, srcJar

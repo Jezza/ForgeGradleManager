@@ -2,11 +2,10 @@ package me.jezza.fgpm.gui.components;
 
 import javax.swing.*;
 
-public class LocationLabel extends JLabel {
+public class LabelLocation extends JLabel {
 
-    public LocationLabel(String text) {
+    public LabelLocation(String text) {
         super(text);
-        setToolTipText(text);
     }
 
     @Override

@@ -1,40 +1,45 @@
 package me.jezza.fgpm.gui;
 
-import me.jezza.fgpm.ModManager;
-import me.jezza.fgpm.core.ModState;
+import me.jezza.fgpm.App;
 import me.jezza.fgpm.core.managers.BuildManager;
-import me.jezza.fgpm.core.managers.CommandManager;
-import me.jezza.fgpm.core.managers.ConfigManager;
-import me.jezza.fgpm.gui.components.VersionField;
+import me.jezza.fgpm.gui.components.ButtonBuild;
+import me.jezza.fgpm.gui.components.ButtonEdit;
+import me.jezza.fgpm.gui.components.ComboModList;
+import me.jezza.fgpm.gui.components.FieldVersion;
 import me.jezza.fgpm.gui.frames.HoverFrame;
+import me.jezza.fgpm.gui.lib.IModList;
+import me.jezza.fgpm.gui.lib.IModListener;
+import me.jezza.fgpm.gui.lib.IModProvider;
+import me.jezza.fgpm.mod.ModState;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.LinkedList;
+import java.awt.GridBagConstraints;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.util.ArrayList;
+import java.util.List;
 
-public class FGManager {
+public class FGManager extends MainWindowAbstract implements IModProvider {
 
-    private JFrame mainFrame;
     private HoverFrame hoverFrame;
 
-    private JButton buttonEditMod;
-    private JButton buttonBuild;
-    private JButton buttonIncrement;
-    private JButton buttonDecrement;
-
-    private VersionField versionField;
-    private JComboBox<ModState> comboBox;
+    private ComboModList comboBox;
 
     private boolean updated = false;
 
+    private List<IModListener> listeners;
+
     public FGManager() {
-        initialize();
-        mainFrame.setVisible(true);
     }
 
-    private void initialize() {
-        mainFrame = new JFrame();
+    @Override
+    protected void createUI() {
+        mainFrame.setTitle("ForgeGradle Manager - v" + App.getVersion());
+        mainFrame.setResizable(false);
+        mainFrame.setIconImage(new ImageIcon(getClass().getClassLoader().getResource("icon.png")).getImage());
+        listeners = new ArrayList<>();
         mainFrame.addWindowFocusListener(new WindowFocusListener() {
             public void windowGainedFocus(WindowEvent e) {
                 bringToFront();
@@ -43,181 +48,143 @@ public class FGManager {
             public void windowLostFocus(WindowEvent e) {
             }
         });
-        mainFrame.setTitle("ForgeGradle Manager - " + ModManager.getVersion());
-        mainFrame.setResizable(false);
-        mainFrame.setBounds(100, 100, 378, 153);
-        mainFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        mainFrame.getContentPane().setLayout(null);
-        mainFrame.setIconImage(new ImageIcon(getClass().getClassLoader().getResource("icon.png")).getImage());
+        hoverFrame = new HoverFrame(mainFrame, 360, 25);
 
-        hoverFrame = new HoverFrame(mainFrame, 383, 16);
-        hoverFrame.setLocationRelativeTo(mainFrame);
-        initModDependentComponents();
+        // Button: Plus
+        JButton buttonIncrement = new JButton("+");
+        buttonIncrement.setToolTipText("Increment the version number.");
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.insets.set(2, 2, 0, 1);
+        constraints.gridheight = 2;
+        constraints.weighty = 0.5F;
+        constraints.ipadx = 12;
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        add(buttonIncrement);
 
-        JButton installButton = new JButton("Install");
-        installButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                hoverFrame.updateHover(true);
+        // Button: Minus
+        JButton buttonDecrement = new JButton("-");
+        buttonDecrement.setToolTipText("Decrement the version number.");
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.insets.set(4, 2, 4, 1);
+        constraints.gridheight = 2;
+        constraints.weighty = 0.5F;
+        constraints.ipadx = 12;
+        constraints.ipady = 5;
+        constraints.gridx = 0;
+        constraints.gridy = 2;
+        add(buttonDecrement);
+
+        FieldVersion fieldVersion = new FieldVersion(this, buttonIncrement, buttonDecrement);
+        listeners.add(fieldVersion);
+        fieldVersion.setColumns(10);
+        constraints.gridx = 1;
+        constraints.gridy = 0;
+        constraints.gridheight = 2;
+        constraints.ipadx = 90;
+        constraints.ipady = 0;
+        constraints.insets.set(0, 6, 0, 6);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        add(fieldVersion);
+
+        // Button: Build
+        ButtonBuild buttonBuild = new ButtonBuild("Start build");
+        listeners.add(buttonBuild);
+        buttonBuild.setToolTipText("Change the version, and run the build script.");
+        buttonBuild.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent arg0) {
+                BuildManager.getInstance().buildWithModState(getModState());
             }
         });
-        installButton.setBounds(266, 26, 100, 23);
-        installButton.setToolTipText("Opens a sub-menu.");
-        add(installButton);
-
-        JButton setupButton = new JButton("Setup");
-        setupButton.setToolTipText(CommandManager.GradleCommand.setupDecompWorkspace.name());
-        setupButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                CommandManager.GradleCommand.setupDecompWorkspace.executeCommand();
-            }
-        });
-        setupButton.setBounds(266, 48, 100, 23);
-        add(setupButton);
+        constraints.insets.set(1, 6, 0, 6);
+        constraints.gridheight = 2;
+        constraints.gridx = 1;
+        constraints.gridy = 2;
+        constraints.ipadx = 100;
+        constraints.ipady = 15;
+        add(buttonBuild);
 
         JCheckBox autoIncrement = new JCheckBox("Auto Increment");
+        autoIncrement.setToolTipText("If selected this program auto increments the version number after building.");
         autoIncrement.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 BuildManager.getInstance().toggleAutoIncrement();
             }
         });
-        autoIncrement.setToolTipText("If selected this program auto increments the version number after building.");
-        autoIncrement.setBounds(262, 4, 104, 23);
+        constraints.gridx = 2;
+        constraints.gridy = 0;
+        constraints.fill = GridBagConstraints.BOTH;
         add(autoIncrement);
 
+        JButton installButton = new JButton("Commands");
+        installButton.setToolTipText("Opens a sub-menu.");
+        installButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                hoverFrame.updateHover(true);
+            }
+        });
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets.set(0, 0, 0, 1);
+        constraints.gridx = 2;
+        constraints.gridy = 1;
+        constraints.gridheight = 2;
+        add(installButton);
+
+        ButtonEdit buttonEditMod = new ButtonEdit("Edit Mod", this);
+        listeners.add(buttonEditMod);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets.set(0, 0, 0, 1);
+        constraints.gridx = 2;
+        add(buttonEditMod);
+
         JButton buttonAddMod = new JButton("Add Mod");
+        buttonAddMod.setToolTipText("Add a ModState");
         buttonAddMod.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 GuiAddMenu.createAddMenu(null);
             }
         });
-        buttonAddMod.setBounds(266, 94, 100, 23);
-        buttonAddMod.setToolTipText("Add a ModState");
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets.set(0, 0, 1, 1);
+        constraints.gridx = 2;
         add(buttonAddMod);
-    }
 
-    private void initModDependentComponents() {
-        buttonEditMod = new JButton("Edit Mod");
-        buttonEditMod.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                GuiAddMenu.createAddMenu(getSelectedModState());
-            }
-        });
-        buttonEditMod.setBounds(266, 71, 100, 23);
-        add(buttonEditMod);
-
-        comboBox = new JComboBox<ModState>();
-
-        versionField = new VersionField();
-        versionField.setBounds(70, 17, 186, 20);
-        versionField.setColumns(10);
-        add(versionField);
-
-        // Button: Build
-        buttonBuild = new JButton("Start build");
-        buttonBuild.setBounds(70, 47, 186, 37);
-        buttonBuild.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
-                BuildManager.getInstance().buildWithModState(getSelectedModState());
-            }
-        });
-        buttonBuild.setToolTipText("Change the version, and run the build script.");
-        add(buttonBuild);
-
-        // Button: Plus
-        buttonIncrement = new JButton("+");
-        buttonIncrement.setToolTipText("Increment the version number.");
-        buttonIncrement.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
-                incrementVersion();
-            }
-        });
-        buttonIncrement.setBounds(10, 9, 50, 37);
-        add(buttonIncrement);
-
-        // Button: Minus
-        buttonDecrement = new JButton("-");
-        buttonDecrement.setToolTipText("Decrement the version number.");
-        buttonDecrement.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent arg0) {
-                decrementVersion();
-            }
-        });
-        buttonDecrement.setBounds(10, 47, 50, 37);
-        add(buttonDecrement);
-
-        // Update the combo box now that everything has been initialised
-        comboBox.addItemListener(new ItemListener() {
-            public void itemStateChanged(ItemEvent e) {
-                updateButtons();
-            }
-        });
-        comboBox.setBounds(11, 95, 244, 20);
+        comboBox = new ComboModList(this);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.insets.set(1, 3, 2, 4);
+        constraints.gridwidth = 2;
+        constraints.gridx = 0;
+        constraints.gridy = 4;
         add(comboBox);
-
-        updateComboBox();
-        updateButtons();
-    }
-
-    private void add(Component comp) {
-        mainFrame.getContentPane().add(comp);
-    }
-
-    public void updateModVersion() {
-        if (hasSelectedModState())
-            getSelectedModState().updateVersion(versionField.getText());
     }
 
     private void bringToFront() {
         if (!updated) {
             GuiAddMenu.bringToFront();
-            hoverFrame.toFront();
+            hoverFrame.mainFrame.toFront();
             mainFrame.toFront();
         }
         updated = !updated;
     }
 
-    public void updateModComponents() {
-        updateComboBox();
-        updateButtons();
+    @Override
+    public boolean hasModState() {
+        return comboBox.hasSelectedMod();
     }
 
-    public void updateComboBox() {
-        comboBox.removeAllItems();
-        LinkedList<ModState> modList = ConfigManager.getModList();
-        for (ModState mod : modList)
-            comboBox.addItem(mod);
+    @Override
+    public ModState getModState() {
+        return comboBox.getSelectedMod();
     }
 
-    private void updateButtons() {
-        boolean flag = hasSelectedModState();
-        setFlag(flag);
-        versionField.setText(flag ? getSelectedModState().getVersion() : "");
+    public IModList getModList() {
+        return comboBox;
     }
 
-    private void setFlag(boolean flag) {
-        buttonIncrement.setEnabled(flag);
-        buttonDecrement.setEnabled(flag);
-        buttonBuild.setEnabled(flag);
-        versionField.setEnabled(flag);
-        buttonEditMod.setEnabled(flag);
+    @Override
+    public void triggerUpdate() {
+        comboBox.forceUpdate();
+        for (IModListener listener : listeners)
+            listener.update(hasModState());
     }
-
-    public ModState getSelectedModState() {
-        return (ModState) comboBox.getSelectedItem();
-    }
-
-    private boolean hasSelectedModState() {
-        return comboBox.getSelectedItem() != null;
-    }
-
-    public void incrementVersion() {
-        versionField.incrementVersion();
-        updateModVersion();
-    }
-
-    public void decrementVersion() {
-        versionField.decrementVersion();
-        updateModVersion();
-    }
-
 }

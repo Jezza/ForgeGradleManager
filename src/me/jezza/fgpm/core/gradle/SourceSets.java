@@ -1,6 +1,6 @@
-package me.jezza.fgpm.core.managers.gradle;
+package me.jezza.fgpm.core.gradle;
 
-import me.jezza.fgpm.core.ModState;
+import me.jezza.fgpm.mod.ModState;
 import me.jezza.fgpm.core.Utils;
 import me.jezza.fgpm.core.managers.GradleUtils;
 
@@ -24,8 +24,8 @@ public class SourceSets {
     }
 
     public void setDirectories(ModState modState) {
-        javaDirectory = modState.getCommonFolder().replaceAll("\\\\", "/");
-        resourceDirectory = modState.getResourceFolder().replaceAll("\\\\", "/");
+        javaDirectory = modState.commonFolder.replaceAll("\\\\", "/");
+        resourceDirectory = modState.resourceFolder.replaceAll("\\\\", "/");
     }
 
     public String getWrittenState() {

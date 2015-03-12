@@ -1,7 +1,7 @@
-package me.jezza.fgpm.core.managers.gradle;
+package me.jezza.fgpm.core.gradle;
 
 import com.google.common.collect.Lists;
-import me.jezza.fgpm.core.ModState;
+import me.jezza.fgpm.mod.ModState;
 import me.jezza.fgpm.core.Utils;
 import me.jezza.fgpm.core.managers.GradleUtils;
 
@@ -24,9 +24,9 @@ public class FieldSets {
 
     public void setFields(ModState modState) {
         fields.clear();
-        fields.add(modState.getVersion());
-        fields.add(modState.getGroupName());
-        fields.add(modState.getModID());
+        fields.add(modState.version.toString());
+        fields.add(modState.groupName);
+        fields.add(modState.modID);
     }
 
     public String getWrittenState() {

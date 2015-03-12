@@ -1,9 +1,8 @@
 package me.jezza.fgpm.core.managers;
 
-import me.jezza.fgpm.ModManager;
-import me.jezza.fgpm.core.ModState;
-import me.jezza.fgpm.core.managers.gradle.FieldSets;
-import me.jezza.fgpm.core.managers.gradle.SourceSets;
+import me.jezza.fgpm.core.gradle.FieldSets;
+import me.jezza.fgpm.core.gradle.SourceSets;
+import me.jezza.fgpm.mod.ModState;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -41,8 +40,7 @@ public class BuildManager {
         writeFile();
 
         CommandManager.GradleCommand.build.executeCommand();
-        if (autoIncrement)
-            ModManager.getFGManager().incrementVersion();
+//        if (autoIncrement)
     }
 
     private void writeFile() {
@@ -56,19 +54,15 @@ public class BuildManager {
         }
     }
 
-    public void readFile() {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(buildFile));
-            String line = null;
-            while ((line = reader.readLine()) != null)
-                file.add(line);
-            reader.close();
+    public void readFile() throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(buildFile));
+        String line = null;
+        while ((line = reader.readLine()) != null)
+            file.add(line);
+        reader.close();
 
-            fieldSets = FieldSets.createFromFile(file);
-            sourceSets = SourceSets.createFromFile(file);
-
-        } catch (IOException e) {
-        }
+        fieldSets = FieldSets.createFromFile(file);
+        sourceSets = SourceSets.createFromFile(file);
     }
 
 }

@@ -1,85 +1,141 @@
 package me.jezza.fgpm.gui;
 
-import me.jezza.fgpm.ModManager;
-import me.jezza.fgpm.core.ModState;
+import me.jezza.fgpm.App;
 import me.jezza.fgpm.core.Utils;
-import me.jezza.fgpm.core.managers.ConfigManager;
-import me.jezza.fgpm.gui.components.LocationLabel;
-import me.jezza.fgpm.gui.components.LocationSelector;
+import me.jezza.fgpm.gui.components.ButtonLocation;
+import me.jezza.fgpm.gui.components.LabelLocation;
+import me.jezza.fgpm.mod.InvalidVersionException;
+import me.jezza.fgpm.mod.ModState;
+import me.jezza.fgpm.mod.Version;
 
 import javax.swing.*;
-import java.awt.Window.Type;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.awt.Color;
+import java.awt.GridBagConstraints;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-public class GuiAddMenu {
+public class GuiAddMenu extends MainWindowAbstract implements DocumentListener {
     private static GuiAddMenu INSTANCE = null;
 
-    public JFrame mainWindow;
+    private Version currentVersion;
 
-    private JTextField modIDField, versionField, groupField;
-    private LocationLabel lblCommonLocation, lblResourceLocation;
-    private JButton btnAdd, deleteButton;
-    private LocationSelector btnSourceLocation, btnResourceLocation;
+    private JLabel lblVersion, lblStrippedVersion;
+    private JTextField fieldModID, fieldVersion, fieldGroup;
+    private LabelLocation lblCommonLocation, lblResourceLocation;
+    private JButton btnAdd, btnDelete;
+
+    private static int temp = 0;
 
     public GuiAddMenu() {
-        mainWindow = new JFrame();
-        mainWindow.addWindowListener(new WindowAdapter() {
+    }
+
+    @Override
+    protected void createUI() {
+        mainFrame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
                 disposeOfAddMenu();
             }
         });
-        mainWindow.setResizable(false);
-        mainWindow.setTitle("Add a Mod");
-        mainWindow.setType(Type.UTILITY);
-        mainWindow.setBounds(100, 100, 263, 249);
-        mainWindow.getContentPane().setLayout(null);
-
-        lblCommonLocation = new LocationLabel("Unselected");
-        lblCommonLocation.setBounds(6, 115, 247, 14);
-        mainWindow.getContentPane().add(lblCommonLocation);
-
-        lblResourceLocation = new LocationLabel("Unselected");
-        lblResourceLocation.setBounds(6, 158, 247, 14);
-        mainWindow.getContentPane().add(lblResourceLocation);
-
-        btnSourceLocation = new LocationSelector("Source Code Location", lblCommonLocation);
-        btnSourceLocation.setBounds(4, 89, 153, 23);
-        mainWindow.getContentPane().add(btnSourceLocation);
-
-        btnResourceLocation = new LocationSelector("Resource Location", lblResourceLocation);
-        btnResourceLocation.setBounds(4, 132, 153, 23);
-        mainWindow.getContentPane().add(btnResourceLocation);
+        mainFrame.setResizable(false);
+        mainFrame.setTitle("Add a Mod");
+        mainFrame.setType(Window.Type.UTILITY);
+        mainFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
         JLabel lblModID = new JLabel("Mod ID:");
-        lblModID.setBounds(5, 14, 46, 14);
-        mainWindow.getContentPane().add(lblModID);
+        lblModID.setHorizontalAlignment(JLabel.CENTER);
+        constraints.fill = GridBagConstraints.BOTH;
+        add(lblModID);
 
-        JLabel lblVersion = new JLabel("Version:");
-        lblVersion.setBounds(5, 39, 46, 14);
-        mainWindow.getContentPane().add(lblVersion);
+        fieldModID = new JTextField();
+        fieldModID.setColumns(10);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridwidth = 2;
+        add(fieldModID);
+
+        lblVersion = new JLabel("Version:");
+        lblVersion.setForeground(Color.RED);
+        lblVersion.setToolTipText(getDefaultTooltip() + "</html>");
+        lblVersion.setHorizontalAlignment(SwingConstants.LEFT);
+        mainFrame.getContentPane().add(lblVersion);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 0;
+        add(lblVersion);
+
+        fieldVersion = new JTextField();
+        fieldVersion.getDocument().addDocumentListener(this);
+        fieldVersion.setColumns(10);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 1;
+        constraints.gridwidth = 2;
+        add(fieldVersion);
 
         JLabel lblGroup = new JLabel("Group:");
-        lblGroup.setBounds(5, 64, 46, 14);
-        mainWindow.getContentPane().add(lblGroup);
+        lblGroup.setHorizontalAlignment(SwingConstants.LEADING);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 0;
+        add(lblGroup);
 
-        modIDField = new JTextField();
-        modIDField.setBounds(50, 11, 203, 20);
-        modIDField.setColumns(10);
-        mainWindow.getContentPane().add(modIDField);
+        fieldGroup = new JTextField();
+        fieldGroup.setColumns(10);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 1;
+        constraints.gridwidth = 2;
+        add(fieldGroup);
 
-        versionField = new JTextField();
-        versionField.setBounds(50, 36, 203, 20);
-        versionField.setColumns(10);
-        mainWindow.getContentPane().add(versionField);
+        lblCommonLocation = new LabelLocation("Unselected");
+        ButtonLocation btnSourceLocation = new ButtonLocation("Source Code Location", lblCommonLocation);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 0;
+        constraints.weightx = 0.6F;
+        constraints.gridwidth = 2;
+        add(btnSourceLocation);
 
-        groupField = new JTextField();
-        groupField.setBounds(50, 64, 203, 20);
-        groupField.setColumns(10);
-        mainWindow.getContentPane().add(groupField);
+        lblStrippedVersion = new LabelLocation("");
+        lblStrippedVersion.setHorizontalAlignment(SwingConstants.CENTER);
+        lblStrippedVersion.setVisible(false);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 2;
+        constraints.gridy = 3;
+        add(lblStrippedVersion);
+
+        constraints.gridwidth = 3;
+        constraints.gridx = 0;
+        add(lblCommonLocation);
+
+        lblResourceLocation = new LabelLocation("Unselected");
+        ButtonLocation btnResourceLocation = new ButtonLocation("Resource Location", lblResourceLocation);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 0;
+        constraints.weightx = 0.6F;
+        constraints.gridwidth = 2;
+        add(btnResourceLocation);
+
+        JButton tempButton = new JButton("Fill");
+        tempButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                fieldModID.setText("TestMod" + temp);
+                fieldVersion.setText("1.2.1");
+                fieldGroup.setText("me.jezza.test");
+                String temp = "C:/directoryTest";
+                lblResourceLocation.setText(temp);
+                lblCommonLocation.setText(temp);
+                GuiAddMenu.temp += 1;
+            }
+        });
+        constraints.gridx = 2;
+        constraints.gridy = 5;
+        add(tempButton);
+
+        constraints.gridwidth = 3;
+        constraints.gridx = 0;
+        add(lblResourceLocation);
 
         btnAdd = new JButton("Done/Add");
         btnAdd.addActionListener(new ActionListener() {
@@ -87,72 +143,92 @@ public class GuiAddMenu {
                 addModState();
             }
         });
-        btnAdd.setBounds(4, 176, 249, 39);
-        mainWindow.getContentPane().add(btnAdd);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.gridx = 0;
+        constraints.ipadx = 40;
+        constraints.ipady = 20;
+        constraints.weightx = 0.5F;
+        constraints.gridwidth = 2;
+        add(btnAdd);
 
-        deleteButton = new JButton("Delete");
-        deleteButton.addActionListener(new ActionListener() {
+        btnDelete = new JButton("Delete");
+        btnDelete.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 removeModState();
             }
         });
-        deleteButton.setBounds(4, 176, 94, 39);
-        deleteButton.setVisible(false);
-        deleteButton.setEnabled(false);
-        mainWindow.getContentPane().add(deleteButton);
+        btnDelete.setEnabled(false);
+        constraints.fill = GridBagConstraints.BOTH;
+        constraints.weightx = 0.5F;
+        constraints.ipadx = 40;
+        constraints.ipady = 20;
+        constraints.gridx = 2;
+        constraints.gridy = 7;
+        add(btnDelete);
 
-        mainWindow.setVisible(true);
+        run();
+    }
+
+    private String getDefaultTooltip() {
+        StringBuilder toolTip = new StringBuilder("<html>Red: Not a valid version number.");
+        toolTip.append("<br>");
+        toolTip.append("Green: Valid version number.");
+        toolTip.append("<br>");
+        toolTip.append("Blue: Valid version number, but something was stripped.");
+        toolTip.append("<br>");
+        return toolTip.toString();
     }
 
     public GuiAddMenu setState(ModState modState) {
         btnAdd.setBounds(98, 176, 155, 39);
-        deleteButton.setVisible(true);
-        deleteButton.setEnabled(true);
+        btnDelete.setEnabled(true);
 
-        modIDField.setText(modState.getModID());
-        versionField.setText(modState.getVersion());
-        groupField.setText(modState.getGroupName());
-        lblCommonLocation.setText(modState.getCommonFolder());
-        lblResourceLocation.setText(modState.getResourceFolder());
+        fieldModID.setText(modState.modID);
+        fieldVersion.setText(modState.version.toString());
+        fieldGroup.setText(modState.groupName);
+        lblCommonLocation.setText(modState.commonFolder);
+        lblResourceLocation.setText(modState.resourceFolder);
+        confirmVersion();
         return this;
     }
 
     private void removeModState() {
-        ConfigManager.removeModState(new ModState(modIDField.getText(), lblCommonLocation.getText(), lblResourceLocation.getText(), versionField.getText(), groupField.getText()));
+        App.getFGManager().getModList().removeModState(new ModState(fieldModID.getText(), currentVersion, lblCommonLocation.getText(), lblResourceLocation.getText(), fieldGroup.getText()));
+        App.getFGManager().triggerUpdate();
         exit();
     }
 
     private void addModState() {
         String reason = "";
-        String modID = modIDField.getText();
-        String version = versionField.getText();
-        String group = groupField.getText();
+        String modID = fieldModID.getText();
+        String group = fieldGroup.getText();
         String commonFolder = lblCommonLocation.getText();
         String resourceFolder = lblResourceLocation.getText();
 
-        if (lblCommonLocation.getText().equals("Unselected"))
+        if (commonFolder.equals("Unselected"))
             reason = "Need to input a source folder";
-        if (lblResourceLocation.getText().equals("Unselected"))
+        if (resourceFolder.equals("Unselected"))
             reason = "Need to input a resources folder";
         if (group.equals(""))
             reason = "Need to input a Group Name.";
-        if (version.equals(""))
+        if (currentVersion == null)
             reason = "Need to input a starting version.";
         if (modID.equals(""))
             reason = "Need to input a Mod ID.";
 
-        if (!reason.equals("")) {
+        if (!reason.isEmpty()) {
             Utils.showErrorMessage("Failed to add mod: " + reason);
             return;
         }
 
-        new ModState(modID, commonFolder, resourceFolder, version, group).addState();
+        App.getFGManager().getModList().addModState(new ModState(modID, currentVersion, commonFolder, resourceFolder, group));
+        App.getFGManager().triggerUpdate();
         exit();
     }
 
     private void exit() {
-        mainWindow.setVisible(false);
-        mainWindow.dispose();
+        mainFrame.setVisible(false);
+        mainFrame.dispose();
         disposeOfAddMenu();
     }
 
@@ -167,12 +243,42 @@ public class GuiAddMenu {
 
     public static void disposeOfAddMenu() {
         INSTANCE = null;
-        ModManager.getFGManager().updateModComponents();
     }
 
     public static void bringToFront() {
         if (INSTANCE != null)
-            INSTANCE.mainWindow.toFront();
+            INSTANCE.mainFrame.toFront();
     }
 
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+        confirmVersion();
+    }
+
+    @Override
+    public void removeUpdate(DocumentEvent e) {
+        confirmVersion();
+    }
+
+    @Override
+    public void changedUpdate(DocumentEvent e) {
+        confirmVersion();
+    }
+
+    private void confirmVersion() {
+        boolean valid = true;
+        try {
+            currentVersion = Version.parse(fieldVersion.getText());
+        } catch (InvalidVersionException e) {
+            currentVersion = null;
+            valid = false;
+        }
+        boolean stripFlag = Version.wasLastParseStripped();
+        lblVersion.setForeground(valid ? stripFlag ? Color.BLUE : Color.GREEN.darker() : Color.RED);
+        fieldVersion.setForeground(valid ? stripFlag ? Color.BLUE : Color.GREEN.darker() : Color.RED);
+        lblStrippedVersion.setForeground(valid ? stripFlag ? Color.BLUE : Color.GREEN.darker() : Color.RED);
+
+        lblStrippedVersion.setVisible(valid);
+        lblStrippedVersion.setText(valid ? currentVersion.toString() : "");
+    }
 }

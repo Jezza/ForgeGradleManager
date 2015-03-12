@@ -1,5 +1,6 @@
 package me.jezza.fgpm.core.managers;
 
+import me.jezza.fgpm.App;
 import me.jezza.fgpm.core.Utils;
 
 import java.io.IOException;
@@ -17,21 +18,15 @@ public class CommandManager {
         try {
             Runtime.getRuntime().exec("cmd /c start " + command);
         } catch (IOException e) {
+            App.LOG.error("Failed to execute command: " + command);
         }
     }
 
     public static enum GradleCommand {
-        // Apologise for this not following java convention as a constant.
-        // This is done for the user, as I use the name of the field for executing the command.
-        // This means it shows up in the console, so, if they want to see what command they've ran.
-        // It will show it with java convention for the name of the field, not constant.
         build,
-        clean,
         setupDecompWorkspace,
-
         eclipse,
         idea;
-        // @formatter:on
 
         public void executeCommand() {
             parseGradleCommand(name());

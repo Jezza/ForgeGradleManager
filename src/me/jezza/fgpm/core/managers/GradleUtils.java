@@ -18,25 +18,61 @@ public class GradleUtils {
         return value.substring(1, value.length() - 1);
     }
 
+    /**
+     * public static void main(String[] args) {
+     * }
+     */
     public static String formatMethod(String method) {
-        String[] lineSplit = method.split(System.lineSeparator());
+        method = method.replaceAll(System.lineSeparator(), "");
+        method = method.replaceAll("\n", "");
         StringBuilder formatted = new StringBuilder();
 
-        int depth = 0;
-        boolean openingBrace = false;
-        for (String str : lineSplit) {
-            if (openingBrace)
-                depth++;
-            openingBrace = str.contains("{");
-            if (str.contains("}"))
-                depth--;
-            if (depth > 0)
-                for (int i = 0; i < depth * 4; i++)
-                    formatted.append(" ");
-            formatted.append(str);
-            formatted.append(System.lineSeparator());
-        }
+        int indentDepth = 4;
 
+        int depth = 0;
+        boolean opening = true;
+        for (int i = 0; i < method.length(); i++) {
+            char c = method.charAt(i);
+            int k = i + 1;
+            char peek = k >= method.length() ? c : method.charAt(k);
+
+            switch (c) {
+                case '{':
+                    formatted.append(c);
+                    formatted.append(System.lineSeparator());
+                    depth++;
+                    if (depth > 0)
+                        for (int j = 0; j < depth * indentDepth; j++)
+                            formatted.append(" ");
+                    continue;
+                case '}':
+                    depth--;
+                    formatted.append(System.lineSeparator());
+                    if (depth > 0)
+                        for (int j = 0; j < depth * indentDepth; j++)
+                            formatted.append(" ");
+                    formatted.append(c);
+                    if (peek == '}')
+                        continue;
+                    formatted.append(System.lineSeparator());
+                    if (depth > 0)
+                        for (int j = 0; j < depth * indentDepth; j++)
+                            formatted.append(" ");
+                    continue;
+                case '"':
+                    if (opening) {
+                        formatted.append(c);
+                        opening = false;
+                        continue;
+                    }
+                    formatted.append(c);
+                    formatted.append(System.lineSeparator());
+                    opening = true;
+                    continue;
+                default:
+                    formatted.append(c);
+            }
+        }
         return formatted.toString();
     }
 
