@@ -1,4 +1,10 @@
-buildscript {
-    repositories {
+configurations.compile.copy().each { file ->
+    logger.lifecycle "Processing ${file.path}..."
+    copy {
+        from(zipTree(file.path)) {
+            includeEmptyDirs = false
+            include '**/*_at.cfg'
+        }
+        into('src/api/resources/at')
     }
 }

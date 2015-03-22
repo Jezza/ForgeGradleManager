@@ -2,6 +2,7 @@ package me.jezza.fgpm.core.gradle.reader;
 
 import me.jezza.fgpm.core.exceptions.GradleSyntaxException;
 import me.jezza.fgpm.core.gradle.builders.ComponentBuilder;
+import me.jezza.fgpm.core.gradle.lib.ElementTypes;
 
 import static me.jezza.fgpm.core.gradle.lib.ElementTypes.*;
 
@@ -11,16 +12,19 @@ public class GradleNavigator {
     private IndexBuffer elementBuffer;
     private int elementIndex;
 
+    private int startIndex;
+    private ComponentBuilder builder;
+
     public GradleNavigator(CharBuffer dataBuffer, IndexBuffer elementBuffer) {
-        this.dataBuffer = dataBuffer;
-        this.elementBuffer = elementBuffer;
-        this.elementIndex = 0;
+        this(dataBuffer, elementBuffer, 0);
     }
 
     public GradleNavigator(CharBuffer dataBuffer, IndexBuffer elementBuffer, int elementIndex) {
         this.dataBuffer = dataBuffer;
         this.elementBuffer = elementBuffer;
         this.elementIndex = elementIndex;
+        this.startIndex = elementIndex;
+        builder = new ComponentBuilder(this);
     }
 
     public boolean hasNext() {
@@ -43,6 +47,10 @@ public class GradleNavigator {
         elementIndex--;
     }
 
+    public void resetPosition() {
+        elementIndex = startIndex;
+    }
+
     public int position() {
         return elementBuffer.position[elementIndex];
     }
@@ -55,8 +63,19 @@ public class GradleNavigator {
         return elementBuffer.type[elementIndex];
     }
 
-    public int index() {
-        return elementIndex;
+    public String cursorPosition() {
+        int line = 1;
+        int index = 0;
+
+        for (int i = 0; i < position(); i++) {
+            if (dataBuffer.data[i] == GradleReader.NEW_LINE) {
+                line++;
+                index = 0;
+            } else
+                index++;
+        }
+
+        return String.format("Line #%s, Char #%s", line, index);
     }
 
     public boolean isEqual(String target) {
@@ -143,6 +162,34 @@ public class GradleNavigator {
         return count;
     }
 
+    public String typeString() {
+        switch (type()) {
+            case ElementTypes.NAMESPACE:
+                return "NAMESPACE";
+            case ElementTypes.METHOD_START:
+                return "METHOD_START";
+            case ElementTypes.METHOD_END:
+                return "METHOD_END";
+            case ElementTypes.FUNCTION_START:
+                return "FUNCTION_START";
+            case ElementTypes.FUNCTION_END:
+                return "FUNCTION_END";
+            case ElementTypes.EQUAL:
+                return "EQUAL";
+            case ElementTypes.COLON:
+                return "COLON";
+            case ElementTypes.STRING:
+                return "STRING";
+            case ElementTypes.COMMA:
+                return "COMMA";
+            case ElementTypes.LAMBDA:
+                return "LAMBDA";
+            case ElementTypes.CONCAT:
+                return "CONCAT";
+        }
+        return "UNDEFINED";
+    }
+
     public String asString() {
         int pos = position();
         StringBuilder builder = new StringBuilder();
@@ -151,7 +198,23 @@ public class GradleNavigator {
         return builder.toString();
     }
 
+    public String asNamespace() {
+        int pos = position();
+        StringBuilder builder = new StringBuilder();
+        for (int j = 0; j < length(); j++) {
+            char c = dataBuffer.data[pos + j];
+            if (!Character.isAlphabetic(c))
+                return builder.toString();
+            builder.append(c);
+        }
+        return builder.toString();
+    }
+
+    public boolean asBoolean() {
+        return type() == NAMESPACE && Boolean.parseBoolean(asString());
+    }
+
     public ComponentBuilder builder() {
-        return new ComponentBuilder(this);
+        return builder;
     }
 }

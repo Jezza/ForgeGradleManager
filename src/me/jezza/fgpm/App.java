@@ -1,6 +1,7 @@
 package me.jezza.fgpm;
 
 import me.jezza.fgpm.config.IJsonObject;
+import me.jezza.fgpm.core.gradle.lib.IGradleComponent;
 import me.jezza.fgpm.core.gradle.reader.GradleReader;
 import me.jezza.fgpm.gui.FGManager;
 import org.apache.logging.log4j.LogManager;
@@ -52,11 +53,22 @@ public class App {
 //        }
 
 //        SwingUtilities.invokeLater(modManager);
+        IGradleComponent[] result = null;
         try {
-            new GradleReader(new File(".", "build.gradle")).read();
+            result = new GradleReader(new File(".", "build.gradle")).read();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
+        if (result == null || result.length == 0) {
+            App.LOG.info("No components discovered!");
+            return;
+        }
+
+        App.LOG.info("Components parsed: " + result.length);
+
+        for (IGradleComponent component : result)
+            App.LOG.info(component);
     }
 
     public static String getVersion() {

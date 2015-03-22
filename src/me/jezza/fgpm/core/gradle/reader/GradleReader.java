@@ -104,6 +104,7 @@ public class GradleReader {
                 case 'Y':
                 case 'z':
                 case 'Z':
+                case '.':
                     consumeTextBlock();
                     elementIndex++;
                     break;
@@ -113,13 +114,15 @@ public class GradleReader {
                 case ')':
                     setElementDataLength1(elementIndex++, FUNCTION_END, position);
                     break;
+                case '+':
+                    setElementDataLength1(elementIndex++, CONCAT, position++);
+                    break;
                 case '-':
                     consumeLambda();
                     break;
                 case '\'':
                 case '"':
                     consumeString();
-                    elementIndex++;
                     break;
                 case '/':
                     skipComment();
@@ -131,39 +134,13 @@ public class GradleReader {
         GradleNavigator navigator = new GradleNavigator(dataBuffer, elementBuffer, -1);
         ComponentBuilder builder = navigator.builder();
 
-//        App.LOG.info(elementIndex);
-//        while (navigator.hasNext()) {
-//            navigator.next();
-//            App.LOG.info(navigator.asString());
-//        }
-
-//        IGradleComponent sourceSets = builder.findComponent("sourceSets");
-
-//        IGradleComponent test = builder.find("sourceSets");
-//        test.isNamespace();
-//        test.isMethod();
-//            test.isLambda();
-//        test.isFunction();
-//        test.isString();
-//            test.isField();
-//            test.isApplier();
-
-//        EQUAL = 6;
-//        COLON = 7;
-//        STRING = 8;
-//        COMMA = 9;
-//        LAMBDA = 10;
-//        CONCAT = 11;
-        return builder.build();
+        return builder.buildAll();
     }
 
     private void consumeTextBlock() {
         int tempPos = position;
         boolean endOfBlock = false;
         while (!endOfBlock) {
-//            ++tempPos;
-//            App.LOG.warn(dataBuffer.data[tempPos]);
-//            switch (dataBuffer.data[tempPos]) {
             switch (dataBuffer.data[++tempPos]) {
                 case NEW_LINE:
                     consumeNamespace(tempPos);
@@ -172,34 +149,44 @@ public class GradleReader {
                 case '{':
                     consumeMethod(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
                 case '=':
                     consumeField(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
                 case '\'':
                 case '"':
                     consumeNamespace(tempPos);
                     endOfBlock = true;
                     tempPos--;
-                    break;
+                    continue;
                 case '(':
                     consumeFunction(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
                 case ')':
                     consumeFunctionEnd(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
                 case ',':
                     consumeComma(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
                 case ':':
                     consumeColon(tempPos);
                     endOfBlock = true;
-                    break;
+                    continue;
+                case '+':
+                    consumeConcat(tempPos);
+                    endOfBlock = true;
+                    continue;
             }
+
+            if (dataBuffer.length <= tempPos + 1) {
+                consumeNamespace(tempPos + 1);
+                endOfBlock = true;
+            }
+
         }
         this.position = tempPos;
     }
@@ -216,7 +203,7 @@ public class GradleReader {
                     break;
             }
         }
-        setElementData(elementIndex, STRING, position, tempPos - position + 1);
+        setElementData(elementIndex++, STRING, position, tempPos - position + 1);
         this.position = tempPos;
     }
 
@@ -272,6 +259,9 @@ public class GradleReader {
                     endOfCommentFound = true;
                     break;
             }
+
+            if (dataBuffer.length <= tempPos + 1)
+                endOfCommentFound = true;
         }
         this.position = tempPos;
     }
@@ -295,6 +285,11 @@ public class GradleReader {
 
     private void consumeColon(int position) {
         setElementData(elementIndex, COLON, this.position, position - this.position + 1);
+    }
+
+    private void consumeConcat(int position) {
+        consumeNamespace(position);
+        setElementDataLength1(++elementIndex, CONCAT, position);
     }
 
     private void consumeField(int position) {
